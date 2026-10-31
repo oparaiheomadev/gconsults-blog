@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router';
 import PublicLayout from '@/components/layout/PublicLayout';
 import AdminLayout from '@/components/layout/AdminLayout';
 import ScrollToTop from '@/components/layout/ScrollToTop';
+import ProtectedRoute from '@/components/layout/ProtectedRoute';
 import Home from '@/pages/Home';
 import Post from '@/pages/Post';
 import NotFound from '@/pages/NotFound';
@@ -31,13 +32,15 @@ export default function App() {
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password" element={<ResetPassword />} />
 
-        {/* Admin pages: admin frame (protected in step 2) */}
-        <Route path="admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="posts/new" element={<PostEditor />} />
-          <Route path="posts/:id" element={<PostEditor />} />
+        {/* Admin pages: guarded, admin only */}
+        <Route element={<ProtectedRoute />}>
+          {/* Admin pages: admin frame (protected in step 2) */}
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="posts/new" element={<PostEditor />} />
+            <Route path="posts/:id" element={<PostEditor />} />
+          </Route>
         </Route>
-
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
