@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import StatusPills from '@/components/admin/StatusPills';
 import PostsTable from '@/components/admin/PostsTable';
 import Pagination from '@/components/admin/Pagination';
+import DeletePostDialog from '@/components/admin/DeletePostDialog';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -40,11 +41,8 @@ export default function Dashboard() {
     setSearchText(e.target.value);
     setPage(1);
   }
-
+  const [postToDelete, setPostToDelete] = useState(null);
   // temporary: the confirm dialog arrives in step 3c
-  function handleDelete(post) {
-    console.log('delete clicked for', post.title);
-  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
@@ -104,13 +102,17 @@ export default function Dashboard() {
         )}
 
         {posts.length > 0 && (
-          <PostsTable posts={posts} onDelete={handleDelete} />
+          <PostsTable posts={posts} onDelete={setPostToDelete} />
         )}
       </div>
 
       <div className="mt-6">
         <Pagination page={page} totalPages={totalPages} onChange={setPage} />
       </div>
+      <DeletePostDialog
+        post={postToDelete}
+        onClose={() => setPostToDelete(null)}
+      />
     </div>
   );
 }
