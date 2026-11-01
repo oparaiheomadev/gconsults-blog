@@ -89,3 +89,71 @@ export function useDeletePost() {
       queryClient.invalidateQueries({ queryKey: ADMIN_POSTS_KEY }),
   });
 }
+
+// Supabase says "duplicate key" when a slug is already taken.
+// Turn that into words the admin understands.
+function friendlyError(error) {
+  if (error.code === '23505') {
+    return new Error(
+      'Another post already uses this slug. Change the slug and try again.',
+    );
+  }
+  return error;
+}
+
+// ---- Reading: one full post, for the editor ----
+export function useAdminPost(id) {
+  return useQuery({
+    queryKey: [...ADMIN_POSTS_KEY, 'one', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', id)
+        .single(); // exactly one row, not a list
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id, // on /admin/posts/new there is no id, so don't fetch
+  });
+}
+
+// ---- Writing: create a new post ----
+export function useCreatePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (post) => {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert(post)
+        .select() // send the new row back (we need its id)
+        .single();
+      if (error) throw friendlyError(error);
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_POSTS_KEY }),
+  });
+}
+
+// ---- Writing: save changes to an existing post ----
+// call it like: updatePost.mutate({ id, title, ... })
+export function useUpdatePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...changes }) => {
+      const { data, error } = await supabase
+        .from('posts')
+        .update(changes)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw friendlyError(error);
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_POSTS_KEY }),
+  });
+}
