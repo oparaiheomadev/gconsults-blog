@@ -8,14 +8,12 @@ import './editor.css';
 // The writing area of the post editor.
 // content:  the saved post body (TipTap JSON), or null for a new post
 // onChange: called on every change with { json, html }
-//           json = what we save and load back into the editor
-//           html = what the public post page will show
 export default function RichTextEditor({ content, onChange }) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] }, // the post title is the only H1
-        link: { openOnClick: false }, // clicking a link while writing shouldn't open it
+        link: { openOnClick: false }, // don't open links while writing
       }),
       Image,
       Placeholder.configure({ placeholder: 'Start writing your post…' }),
@@ -23,7 +21,6 @@ export default function RichTextEditor({ content, onChange }) {
     content: content ?? '',
     editorProps: {
       attributes: {
-        // "prose" = the typography plugin: nice headings, lists, quotes
         class:
           'prose prose-lg max-w-none min-h-[400px] px-6 py-5 focus:outline-none',
       },
