@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Plus, Search } from 'lucide-react';
-import { useAdminPosts, usePostCounts } from '@/hooks/usePosts';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useAdminPosts } from '@/hooks/usePosts';
 import { PAGE_SIZE } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,23 +13,36 @@ import DeletePostDialog from '@/components/admin/DeletePostDialog';
 export default function Dashboard() {
   const navigate = useNavigate();
 
+  // 1. get ALL posts (same idea as useJobs on the website)
+  const { data: allPosts = [], isLoading, isFetching, error } = useAdminPosts();
+
   // what the admin has chosen
   const [status, setStatus] = useState('all');
-  const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
-  // only search after typing pauses
-  const search = useDebounce(searchText, 400);
+  // 2. the numbers on the pills
+  const counts = useMemo(
+    () => ({
+      all: allPosts.length,
+      published: allPosts.filter((post) => post.status === 'published').length,
+      draft: allPosts.filter((post) => post.status === 'draft').length,
+    }),
+    [allPosts],
+  );
 
-  const { data, isLoading, isFetching, error } = useAdminPosts({
-    status,
-    search,
-    page,
-  });
-  const { data: counts } = usePostCounts();
+  // 3. keep only the posts that match the pill and the search
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-  const posts = data?.posts ?? [];
-  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+    return allPosts
+      .filter((post) => status === 'all' || post.status === status)
+      .filter((post) => !query || post.title.toLowerCase().includes(query));
+  }, [allPosts, status, search]);
+
+  // 4. cut out the 20 posts for this page
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const posts = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // changing tab or search starts again from page 1
   function changeStatus(value) {
@@ -38,11 +50,10 @@ export default function Dashboard() {
     setPage(1);
   }
   function changeSearch(e) {
-    setSearchText(e.target.value);
+    setSearch(e.target.value);
     setPage(1);
   }
   const [postToDelete, setPostToDelete] = useState(null);
-  // temporary: the confirm dialog arrives in step 3c
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
@@ -69,7 +80,7 @@ export default function Dashboard() {
         <div className="relative w-full sm:w-72">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={searchText}
+            value={search}
             onChange={changeSearch}
             placeholder="Search titles…"
             aria-label="Search posts"
@@ -93,7 +104,9 @@ export default function Dashboard() {
         {!isLoading && !error && posts.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
             <p className="font-medium">
-              {search ? `No posts match "${search}".` : 'No posts here yet.'}
+              {search.trim()
+                ? `No posts match "${search}".`
+                : 'No posts here yet.'}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Click "New post" to write your first one.
