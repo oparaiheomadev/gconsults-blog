@@ -17,17 +17,16 @@ export default function SignIn() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
+    setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-
+    setLoading(false);
     if (error) {
       setError(error.message);
-      setLoading(false);
       return;
     }
 
